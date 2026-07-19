@@ -2,159 +2,122 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>9×9‑UNI‑KOSMOS</title>
+<title>GRÜN · Arbeits‑Tüchtigkeit · 360°‑Realität</title>
 
 <style>
-body { background:#000; color:#eee; font-family:Consolas; padding:20px; }
-h1,h2 { color:#00e0ff; text-shadow:0 0 10px #00e0ff; }
-.block { border:1px solid #00e0ff; padding:15px; margin:20px 0; border-radius:8px; background:#111; }
-.matrix { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-.cell { padding:10px; background:#222; border:1px solid #333; text-align:center; border-radius:6px; }
-.modebox { margin-top:10px; }
-.scanbox { background:#222; border:1px solid #444; padding:10px; margin-top:10px; }
-.verify { background:#1a1a1a; border:1px solid #5500ff; padding:10px; margin-top:10px; }
+  body { background:#000; color:#0f0; font-family:Consolas; padding:20px; }
+  h1, h2 { color:#6cf; }
+  .block { background:#111; border:1px solid #333; padding:15px; margin:20px 0; }
+  pre { background:#000; border:1px solid #333; padding:12px; }
+  .ok { color:#00ff88; }
+  .mid { color:#ffcc00; }
+  .bad { color:#ff4444; }
 </style>
 
 <script>
-// Station automatisch erkennen (C / X / Z / DA / NE / BEN)
-function detectStation() {
-  const path = window.location.pathname.toLowerCase();
-  if (path.includes("c")) return "C";
-  if (path.includes("x")) return "X";
-  if (path.includes("z")) return "Z";
-  if (path.includes("da")) return "DA";
-  if (path.includes("ne")) return "NE";
-  if (path.includes("ben")) return "BEN";
-  return "UNDEFINED";
+// ------------------------------------------------------
+// GRÜN – operative Bewertung
+// ------------------------------------------------------
+
+const FILES = [
+  "BEN.tmp","DA.tmp","NE.tmp",
+  "C.tmp","X.tmp","Z.tmp",
+  "ORT.scan","scan.language",
+  "gone.room","ID.html",
+  "index.html","verify.html",
+  "README.md"
+];
+
+// Gewichtung für Arbeits‑Tüchtigkeit
+const WEIGHTS = {
+  "BEN.tmp": 15,
+  "DA.tmp": 15,
+  "NE.tmp": 15,
+  "C.tmp": 20,
+  "X.tmp": 10,
+  "Z.tmp": 10,
+  "ORT.scan": 5,
+  "scan.language": 5,
+  "gone.room": 2,
+  "ID.html": 1,
+  "index.html": 1,
+  "verify.html": 1,
+  "README.md": 0
+};
+
+// Datei‑Check
+async function checkFile(name){
+  try{
+    const res = await fetch("./" + name);
+    if(!res.ok) return { name, ok:false };
+    const txt = await res.text();
+    return { name, ok:true, content:txt };
+  }catch(e){
+    return { name, ok:false };
+  }
 }
-const station = detectStation();
-</script>
 
+// Score berechnen
+function calcScore(results){
+  let score = 0;
+  results.forEach(r => {
+    if(r.ok) score += WEIGHTS[r.name];
+  });
+  return score;
+}
+
+// 360°‑Matrix erzeugen
+function matrix(results){
+  return {
+    A: results.filter(r => ["BEN.tmp","DA.tmp","NE.tmp"].includes(r.name)),
+    B: results.filter(r => ["C.tmp","X.tmp","Z.tmp"].includes(r.name)),
+    SYS: results.filter(r => ["ORT.scan","scan.language","gone.room"].includes(r.name)),
+    META: results.filter(r => ["ID.html","index.html","verify.html","README.md"].includes(r.name))
+  };
+}
+
+// Start
+async function start(){
+  const results = [];
+  for(const f of FILES){
+    results.push(await checkFile(f));
+  }
+
+  const score = calcScore(results);
+  const m = matrix(results);
+
+  document.getElementById("score").textContent = score + "%";
+  document.getElementById("matrix").textContent = JSON.stringify(m, null, 2);
+
+  const out = document.getElementById("files");
+  results.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "block";
+    div.innerHTML = `
+      <h2 class="${r.ok ? 'ok' : 'bad'}">${r.name}</h2>
+      <pre>${r.ok ? "OK" : "FEHLT"}</pre>
+    `;
+    out.appendChild(div);
+  });
+}
+</script>
 </head>
-<body>
 
-<h1>9×9‑UNI‑KOSMOS • Station: <script>document.write(station);</script></h1>
+<body onload="start()">
 
-<!-- 9×9 Axiom + TMP + TRANS + WARB -->
+<h1>GRÜN · Arbeits‑Tüchtigkeit · 360°‑Realität</h1>
+
 <div class="block">
-  <h2>9×9‑Axiom‑Matrix (axiom == tmp == trans == warb)</h2>
-
-  <div class="matrix">
-    <div class="cell">C</div>
-    <div class="cell">X</div>
-    <div class="cell">Z</div>
-
-    <div class="cell">DA</div>
-    <div class="cell">NE</div>
-    <div class="cell">BEN</div>
-
-    <div class="cell">DE</div>
-    <div class="cell">TR</div>
-    <div class="cell">EN</div>
-  </div>
-
-  <p>Alle 9 Axiome sind gleichzeitig:<br>
-     • Axiom<br>
-     • TMP<br>
-     • TRANS<br>
-     • WARB<br>
-     • Attack‑fähig<br>
-     • Station‑fähig</p>
+  <h2>Arbeits‑Tüchtigkeits‑Score</h2>
+  <pre id="score">…</pre>
 </div>
 
-<!-- Station‑Kosmos -->
 <div class="block">
-  <h2><script>document.write(station);</script>‑Kosmos</h2>
-
-  <div class="matrix">
-    <div class="cell"><script>document.write(station);</script></div>
-    <div class="cell"><script>document.write(station);</script>.tmp</div>
-    <div class="cell"><script>document.write(station);</script>.trans</div>
-
-    <div class="cell"><script>document.write(station);</script>.warb</div>
-    <div class="cell"><script>document.write(station);</script>-NC3×3</div>
-    <div class="cell"><script>document.write(station);</script>-NC6e</div>
-
-    <div class="cell"><script>document.write(station);</script>-NC9×9</div>
-    <div class="cell">NC.math</div>
-    <div class="cell">verify.T</div>
-  </div>
+  <h2>360°‑Matrix</h2>
+  <pre id="matrix">…</pre>
 </div>
 
-<!-- FUNKTION.matrix -->
-<div class="block">
-  <h2>FUNKTION.matrix</h2>
-  <div class="matrix">
-    <div class="cell">TMP.WLOCH</div>
-    <div class="cell">TMP.KANAL</div>
-    <div class="cell">TMP.GATE</div>
-
-    <div class="cell">TRANS.WLOCH</div>
-    <div class="cell">TRANS.KANAL</div>
-    <div class="cell">TRANS.GATE</div>
-
-    <div class="cell">WARB.WLOCH</div>
-    <div class="cell">WARB.KANAL</div>
-    <div class="cell">WARB.GATE</div>
-  </div>
-</div>
-
-<!-- Modi -->
-<div class="block">
-  <h2>Modi: IN / OUT / EDIT</h2>
-
-  <div class="modebox">
-    <button onclick="alert('IN‑Modus aktiviert')">IN</button>
-    <button onclick="alert('OUT‑Modus aktiviert')">OUT</button>
-    <button onclick="alert('EDIT‑Modus aktiviert')">EDIT</button>
-  </div>
-</div>
-
-<!-- SCAN -->
-<div class="block">
-  <h2>SCAN‑Modul</h2>
-
-  <div class="scanbox">
-    <input type="text" id="scanInput" placeholder="scan eingeben…" style="width:100%; padding:8px;">
-    <pre id="scanOutput" style="margin-top:10px;"></pre>
-  </div>
-
-<script>
-document.getElementById("scanInput").addEventListener("input", function() {
-  const v = this.value;
-  document.getElementById("scanOutput").textContent =
-    "SCAN → " + v + "\n" +
-    "ORT.scan → " + v + "\n" +
-    "scan.language → " + v;
-});
-</script>
-</div>
-
-<!-- VERIFY -->
-<div class="block">
-  <h2><script>document.write(station);</script>.verify</h2>
-  <div class="verify" id="verifyBox">Analyse läuft…</div>
-
-<script>
-document.getElementById("verifyBox").textContent =
-  station + ".verify:\n" +
-  "- " + station + ".tmp vorhanden\n" +
-  "- " + station + "-NC3×3 / NC6e / NC9×9 erkannt\n" +
-  "- NC.math aktiv\n" +
-  "- verify.T.html gefunden\n" +
-  "- C.tmp / X.tmp / Z.tmp geladen\n" +
-  "- DA.tmp / NE.tmp / BEN.tmp aktiv\n" +
-  "- DE.tmp / TR.tmp / EN.tmp aktiv\n" +
-  "- ghost.html erkannt\n" +
-  "- 9×9‑Operator.me aktiv\n" +
-  "- SYSTEM.me / ROOT.me / SOURCE.me vollständig\n" +
-  "- FUNKTION.matrix geladen\n" +
-  "- UNI.bridge kompatibel\n" +
-  "- WELT.respo kompatibel\n" +
-  "- Keine Fehler erkannt";
-</script>
-
-</div>
+<div id="files"></div>
 
 </body>
 </html>
